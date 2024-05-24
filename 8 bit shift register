@@ -1,0 +1,17 @@
+module shift_reg8(out,data_in,clk,rst    );
+input data_in,clk,rst;
+output reg[7:0]out;                         //8 bit output of shift  reg               
+reg [7:0] tmp;                                  //8 bit temporary register
+always @(posedge clk)               //+ive edge triggered clock             
+begin
+if (rst) begin                                    // rst=1
+tmp = 8'b00000000;                       //initialize temp bit with 0’s
+out = tmp;                                         //out = 8’b00000000
+end
+else begin   
+tmp = tmp << 1;                               //left shift by one bit
+tmp[0] = data_in;                             
+out = tmp;
+end
+end
+endmodule
