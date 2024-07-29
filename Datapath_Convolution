@@ -1,0 +1,50 @@
+module datapath_convolution(data_out,data_in1,data_in2,clk,rst, add_data,load_out);
+input signed [63:0]data_in1,data_in2;
+input clk,rst;
+output reg [284:0]data_out;
+wire [63:0]r;
+wire [18:0]r1,r2,r3,r4,r5,r6,r7,r8;
+output signed [18:0] add_data ;
+output load_out;
+wire [7:0]mul_d;
+Wire  i_rst,j_rst,sft_clk,lti,ltj,mul_st,mul_clk,mul_rst,i_load, j_load,add_clk; 
+reg [3:0]i,j;                                                     //i and j are 4 bit registers
+initial begin
+i = 0;
+j = 0;
+end
+reg signed [18:0]data[14:0];                          //data is 19 , fifteen bit registers
+reg signed [7:0]data1[14:0];                          //data1 is 8, fifteen bit registers
+reg signed[63:0]data2;                                   //data2 is 64 bits register
+always @(j_load,j_rst)begin                         //j_load and j_rst are variable
+if(j_rst)begin
+j <= 0;
+end 
+else if(j_load)begin 
+j <= j+1;
+end
+end
+bit_shifter  bb(r,data_in1[8*(8-j)-1-:8],sft_clk,sft_rst);                                                   //call bit_shifter
+booth_mul   mul1(r1,r[7:0],data_in2[63:56],mul_clk,mul_rst,mul_st,mul_d[0]);     //call booth_mul
+booth_mul   mul2(r2,r[15:8],data_in2[55:48],mul_clk,mul_rst,mul_st,mul_d[1]);   //call booth_mul
+booth_mul   mul3(r3,r[23:16],data_in2[47:40],mul_clk,mul_rst,mul_st,mul_d[2]); //call booth_mul
+booth_mul   mul4(r4,r[31:24],data_in2[39:32],mul_clk,mul_rst,mul_st,mul_d[3]); //call booth_mul
+booth_mul   mul5(r5,r[39:32],data_in2[31:24],mul_clk,mul_rst,mul_st,mul_d[4]); //call booth_mul
+booth_mul   mul6(r6,r[47:40],data_in2[23:16],mul_clk,mul_rst,mul_st,mul_d[5]); //call booth_mul
+booth_mul   mul7(r7,r[55:48],data_in2[15:8],mul_clk,mul_rst,mul_st,mul_d[6]);   //call booth_mul
+booth_mul   mul8(r8,r[63:56],data_in2[7:0],mul_clk,mul_rst,mul_st,mul_d[7]);     //call booth_mul
+adder_17bit ad1(add_data,r1,r2,r3,r4,r5,r6,r7,r8,add_clk);                    //call adder_17bit
+always @(i_load,i_rst)begin                              //i_load and i-rst are variables
+if(i_rst)begin
+i=0;
+end 
+else if(i_load)begin
+data_out[18+i*19 -:19] = add_data;   //bit slicing
+#10;
+i=i+1;
+end
+end
+compareLT ct1(lti,i,4'b1111);              //call compareLT
+compareLT ct2(ltj,j,4'b1111);              // call compareLT
+fsm ctl(sft_clk,sft_rst,i_load,i_rst,j_load,j_rst,clk,rst,add_clk,lti,ltj, load_out,mul_clk,mul_rst,mul_d,mul_st);
+endmodule
