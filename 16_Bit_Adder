@@ -1,0 +1,8 @@
+module adder_17bit(data_out,r1,r2,r3,r4,r5,r6,r7,r8,add_clk);
+input [18:0]r1,r2,r3,r4,r5,r6,r7,r8;
+output reg signed [18:0] data_out;        //19 bit data_out 
+input add_clk;
+always @ (posedge add_clk)  begin
+data_out< = r1+r2+r3+r4+r5+r6+r7+r8;      //19 bit signed addition of 8 samples
+end
+endmodule
