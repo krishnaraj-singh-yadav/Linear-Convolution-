@@ -1,0 +1,127 @@
+module fsm(sft_clk,sft_rst,i_load,i_rst,j_load,j_rst,clk,rst,add_clk,lti,ltj,load_out,mul_clk,mul_rst,mul_d,mul_st);
+input clk,rst,lti,ltj;
+input [7:0]mul_d;
+output  reg  sft_clk,sft_rst,i_load,i_rst,j_load,j_rst,add_clk,load_out,mul_clk,
+mul_rst,mul_st;
+reg [3:0]nstate;                                   //next state
+reg [3:0]cstate;                                   //current state
+always @(posedge clk)begin        //+ve edge triggered clock
+if(rst)
+cstate<=0;
+else 
+cstate<=nstate;
+end
+always@(cstate)                               // cstate is variable
+case(cstate)
+4'b0000:begin 
+sft_rst <= 1’b0;                     //sft_rst=0
+sft_clk <= 1’b0;                    //sft_clk=0
+i_rst <= 1’b0;                        //i_rst=0
+j_rst<= 1’b0;                          //j_rst=0
+add_clk <= 0;                       
+i_load <= 0;
+j_load <= 0;
+load_out <= 0;
+mul_rst <= 0;
+mul_clk<= 0;
+mul_st <= 0;
+nstate <= 4'b0001;
+end
+4'b0001:begin
+#10;
+sft_rst = 1;                           //all bits of shift register are 0’s
+sft_clk = 1;                          //now shift register is ready to shift samples
+i_rst = 0;
+j_rst = 0;
+i_load = 0;
+j_load = 0;
+add_clk = 0;
+nstate = 4'b0010;
+end
+4'b0010:begin
+#10;
+sft_rst = 0;
+sft_clk = 0;
+add_clk = 0;
+nstate = 4'b0011;
+end
+4'b0011:begin
+#10;
+sft_rst = 0;
+sft_clk = 1;
+add_clk = 0;
+nstate = 4'b0100; 
+end
+4'b0100:begin
+#10;
+sft_rst = 0;
+sft_clk = 0;
+mul_clk = 1;
+mul_rst = 1;
+mul_st = 0;
+nstate = 4'b0101;
+end
+4'b0101:begin
+#10;
+mul_rst = 0;
+mul_clk = 0;
+mul_st = 0;
+#10;
+mul_st = 1;                       //now multiplication has started
+mul_clk = 1;
+nstate = 4'b0110;
+end
+4'b0110:begin 
+#10;
+mul_clk = 0;
+mul_st = 0; 
+nstate = 4'b1001;
+end
+4'b1001:begin
+#10;
+if(!mul_d[0])begin       // if mul_d[0]=0  => mul_clk =1
+mul_clk = 1;
+nstate=4'b1101;
+end
+else begin
+#10;
+add_clk = 1;
+#10;
+add_clk = 0;
+nstate = 4'b1010;
+end
+end
+4'b1101:begin 
+#10;
+mul_clk = 0;
+nstate = 4'b1001;
+end
+4'b1010:begin
+if(lti)begin 
+i_load = 1;
+#10;
+i_load = 0;
+nstate = 4'b1011;
+end
+else begin
+nstate = 4'b1011;
+end 
+end
+4'b1011:begin
+#10;
+if(ltj)begin 
+j_load = 1;
+#10;
+j_load = 0;
+nstate = 4'b0011;
+end 
+else begin 
+nstate = 4'b1100;
+end 
+end
+4'b1100:begin
+load_out = 1;
+$display("convolution has done");  // display convolution has done
+end
+endcase
+endmodule
