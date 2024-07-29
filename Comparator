@@ -1,0 +1,8 @@
+module compareLT( out,a,b);
+input [3:0] a,b;                        // a and b are  of 4 bit  
+output reg out;
+	
+always @(*) begin 
+out = (a<b) ? 1'b1:1’b0;        //if a<b then out=1
+end
+endmodule
